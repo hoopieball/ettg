@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ear to the Ground — Weekly Audiology Digest</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8fafb;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0D9488, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #0D9488;
+      margin-bottom: 24px;
+    }
+
+    .tab {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 6px 6px 0 0;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: #0D9488;
+      color: white;
+      font-weight: 600;
+    }
+
+    .tab:not(.active) {
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 1px solid #e5e7eb;
+      border-bottom: none;
+    }
+
+    .tab:not(.active):hover { background: #e5e7eb; }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .action-left {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .edition-date {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: #0D9488;
+      color: white;
+    }
+
+    .btn-primary.copied { background: #10b981; }
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-secondary {
+      background: white;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover { background: #f9fafb; }
+
+    .hint {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 14px;
+    }
+
+    /* Preview */
+    .preview {
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    /* Archive */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .archive-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .archive-item:hover { border-color: #0D9488; }
+
+    .archive-item-date {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .archive-item-sub {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .archive-view {
+      font-size: 13px;
+      color: #0D9488;
+    }
+
+    .back-btn {
+      padding: 8px 16px;
+      background: white;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+
+    .back-btn:hover { background: #f9fafb; }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .loading-dot {
+      display: inline-block;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="loading"><span class="loading-dot">Loading...</span></div>
+  </div>
+
+  <script>
+    // ── STATE ───────────────────────────────────────────────
+    let state = {
+      tab: "latest",        // "latest" | "archive"
+      manifest: [],         // [{ date, file }]
+      loaded: false,
+      currentHtml: "",
+      currentDate: "",
+      viewingFile: null,
+      viewingHtml: "",
+      viewingDate: "",
+      copied: false,
+      error: "",
+    };
+
+    // ── DATA ────────────────────────────────────────────────
+    async function loadManifest() {
+      try {
+        const resp = await fetch("newsletters/manifest.json");
+        if (!resp.ok) throw new Error("No newsletters yet");
+        state.manifest = await resp.json();
+
+        // Load the latest newsletter
+        if (state.manifest.length > 0) {
+          const latest = state.manifest[0];
+          const html = await loadNewsletter(latest.file);
+          state.currentHtml = html;
+          state.currentDate = latest.date;
+        }
+
+        state.loaded = true;
+      } catch (e) {
+        state.loaded = true;
+        state.manifest = [];
+      }
+      render();
+    }
+
+    async function loadNewsletter(filename) {
+      const resp = await fetch(`newsletters/${filename}`);
+      if (!resp.ok) throw new Error("Could not load newsletter");
+      return await resp.text();
+    }
+
+    async function viewArchiveItem(file, date) {
+      state.viewingFile = file;
+      state.viewingDate = date;
+      state.viewingHtml = "";
+      state.copied = false;
+      render();
+
+      try {
+        state.viewingHtml = await loadNewsletter(file);
+      } catch (e) {
+        state.viewingHtml = "<p>Could not load this newsletter.</p>";
+      }
+      render();
+    }
+
+    // ── COPY ────────────────────────────────────────────────
+    async function copyHTML(html) {
+      try {
+        await navigator.clipboard.writeText(html);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = html;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      state.copied = true;
+      render();
+      setTimeout(() => { state.copied = false; render(); }, 2000);
+    }
+
+    // ── HELPERS ─────────────────────────────────────────────
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + "T12:00:00");
+      return d.toLocaleDateString("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    // ── RENDER ──────────────────────────────────────────────
+    function render() {
+      const app = document.getElementById("app");
+
+      if (!state.loaded) {
+        app.innerHTML = '<div class="loading"><span class="loading-dot">Loading...</span></div>';
+        return;
+      }
+
+      const count = state.manifest.length;
+
+      let html = `
+        <div class="header">
+          <div class="logo">EG</div>
+          <div>
+            <h1>Ear to the Ground</h1>
+            <p>Weekly Audiology Digest</p>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab ${state.tab === "latest" ? "active" : ""}"
+                  onclick="switchTab('latest')">Latest</button>
+          <button class="tab ${state.tab === "archive" ? "active" : ""}"
+                  onclick="switchTab('archive')">Archive${count ? ` (${count})` : ""}</button>
+        </div>
+      `;
+
+      if (state.tab === "latest") {
+        html += renderLatest();
+      } else {
+        html += renderArchive();
+      }
+
+      app.innerHTML = html;
+    }
+
+    function renderLatest() {
+      if (state.manifest.length === 0) {
+        return `
+          <div class="empty-state">
+            <p>No newsletters yet.</p>
+            <p style="margin-top: 8px; font-size: 13px; color: #9ca3af;">
+              The first edition will appear here after the weekly build runs.
+              <br>You can also trigger it manually from the Actions tab in your GitHub repo.
+            </p>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="action-bar">
+          <span class="edition-date">${formatDate(state.currentDate)}</span>
+          <button class="btn btn-primary ${state.copied ? "copied" : ""}"
+                  onclick="copyHTML(state.currentHtml)">
+            ${state.copied ? "Copied!" : "Copy Email HTML"}
+          </button>
+        </div>
+        <p class="hint">Copy the HTML and paste into Gmail to forward to your group.</p>
+        <div class="preview">${state.currentHtml}</div>
+      `;
+    }
+
+    function renderArchive() {
+      if (state.manifest.length === 0) {
+        return `
+          <div class="empty-state">
+            <p>No newsletters in the archive yet.</p>
+          </div>
+        `;
+      }
+
+      // Viewing a specific newsletter
+      if (state.viewingFile) {
+        if (!state.viewingHtml) {
+          return `
+            <button class="back-btn" onclick="closeArchiveView()">← Back to Archive</button>
+            <div class="loading"><span class="loading-dot">Loading...</span></div>
+          `;
+        }
+
+        return `
+          <button class="back-btn" onclick="closeArchiveView()">← Back to Archive</button>
+          <div class="action-bar">
+            <span class="edition-date">${formatDate(state.viewingDate)}</span>
+            <button class="btn btn-primary ${state.copied ? "copied" : ""}"
+                    onclick="copyHTML(state.viewingHtml)">
+              ${state.copied ? "Copied!" : "Copy HTML"}
+            </button>
+          </div>
+          <div class="preview">${state.viewingHtml}</div>
+        `;
+      }
+
+      // List view
+      return state.manifest.map(entry => `
+        <div class="archive-item" onclick="viewArchiveItem('${entry.file}', '${entry.date}')">
+          <div>
+            <div class="archive-item-date">${formatDate(entry.date)}</div>
+            <div class="archive-item-sub">Ear to the Ground</div>
+          </div>
+          <span class="archive-view">View →</span>
+        </div>
+      `).join("");
+    }
+
+    // ── ACTIONS ─────────────────────────────────────────────
+    function switchTab(tab) {
+      state.tab = tab;
+      state.viewingFile = null;
+      state.viewingHtml = "";
+      state.copied = false;
+      render();
+    }
+
+    function closeArchiveView() {
+      state.viewingFile = null;
+      state.viewingHtml = "";
+      state.copied = false;
+      render();
+    }
+
+    // ── INIT ────────────────────────────────────────────────
+    loadManifest();
+  </script>
+</body>
+</html>
