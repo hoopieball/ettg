@@ -102,6 +102,12 @@ async function generate() {
     .replace(/\s*```$/i, "")
     .trim();
 
+  // Strip any preamble text before the actual HTML
+  const htmlStart = newsletter.indexOf("<");
+  if (htmlStart > 0) {
+    newsletter = newsletter.substring(htmlStart);
+  }
+
   // Log search usage
   const searchRequests =
     data.usage?.server_tool_use?.web_search_requests || "unknown";
